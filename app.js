@@ -252,7 +252,7 @@ function displayPengeluaran(data) {
         const hargaFormatted = displayRupiah(item.harga);
 
         html += `
-    < div class="transaction-card p-5 rounded-xl shadow-md border border-gray-100 fade-in" style = "animation-delay: ${index * 0.05}s" >
+            <div class="transaction-card p-5 rounded-xl shadow-md border border-gray-100 fade-in" style="animation-delay: ${index * 0.05}s">
                 <div class="flex justify-between items-start mb-3">
                     <div class="flex-1">
                         <p class="text-sm text-gray-500 mb-1">${tanggalFormatted}</p>
@@ -267,8 +267,8 @@ function displayPengeluaran(data) {
                     </button>
                 </div>
                 <p class="text-2xl font-bold text-blue-600">${hargaFormatted}</p>
-            </div >
-    `;
+            </div>
+        `;
     });
 
     container.innerHTML = html;
