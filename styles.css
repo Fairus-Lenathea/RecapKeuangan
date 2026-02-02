@@ -64,6 +64,39 @@ body {
     color: #3B82F6;
 }
 
+/* Filter Buttons */
+.filter-btn {
+    background: rgba(255, 255, 255, 0.8);
+    color: #6B7280;
+    border: 2px solid #E5E7EB;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.filter-btn.active {
+    background: linear-gradient(135deg, #3B82F6 0%, #10B981 100%);
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.filter-btn:hover:not(.active) {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3B82F6;
+    border-color: #3B82F6;
+    transform: translateY(-2px);
+}
+
+/* Date Separator */
+.date-separator {
+    background: linear-gradient(135deg, #F3F4F6 0%, #E5E7EB 100%);
+    border-left: 4px solid #3B82F6;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-top: 16px;
+    margin-bottom: 8px;
+}
+
 /* Transaction Card */
 .transaction-card {
     background: white;

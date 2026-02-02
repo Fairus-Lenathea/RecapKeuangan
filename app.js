@@ -234,49 +234,167 @@ async function loadPengeluaran() {
     }
 }
 
+// Store all data globally for filtering
+let allPengeluaranData = [];
+let currentFilter = 'today';
+
 function displayPengeluaran(data) {
+    // Store data globally
+    allPengeluaranData = data;
+
     const container = document.getElementById('pengeluaranList');
     const emptyState = document.getElementById('emptyState');
 
     if (!data || data.length === 0) {
         container.innerHTML = '';
         emptyState.classList.remove('hidden');
+        updateFilteredSummary([], 'today');
         return;
     }
 
     emptyState.classList.add('hidden');
 
-    let html = '';
-    data.forEach((item, index) => {
-        const tanggalFormatted = formatTanggal(item.tanggal);
-        const hargaFormatted = displayRupiah(item.harga);
+    // Apply current filter
+    const filteredData = filterDataByPeriod(data, currentFilter);
 
+    if (filteredData.length === 0) {
+        container.innerHTML = '<div class="glass-card p-8 rounded-2xl text-center"><p class="text-gray-500">Tidak ada transaksi untuk periode ini</p></div>';
+        updateFilteredSummary([], currentFilter);
+        return;
+    }
+
+    // Group data by date
+    const groupedData = {};
+    filteredData.forEach(item => {
+        const date = item.tanggal;
+        if (!groupedData[date]) {
+            groupedData[date] = [];
+        }
+        groupedData[date].push(item);
+    });
+
+    // Sort dates in descending order
+    const sortedDates = Object.keys(groupedData).sort((a, b) => new Date(b) - new Date(a));
+
+    let html = '';
+    let animationIndex = 0;
+
+    sortedDates.forEach(date => {
+        const items = groupedData[date];
+        const dailyTotal = items.reduce((sum, item) => sum + parseFloat(item.harga), 0);
+        const dateFormatted = formatTanggal(date);
+
+        // Date separator with daily total
         html += `
-            <div class="transaction-card p-5 rounded-xl shadow-md border border-gray-100 fade-in" style="animation-delay: ${index * 0.05}s">
-                <div class="flex justify-between items-start mb-3">
-                    <div class="flex-1">
-                        <p class="text-sm text-gray-500 mb-1">${tanggalFormatted}</p>
-                        <p class="text-xl font-semibold text-gray-800">${item.nama_item}</p>
-                    </div>
-                    <button 
-                        onclick="deletePengeluaran(${item.id})" 
-                        class="btn-delete ml-3"
-                        title="Hapus"
-                    >
-                        🗑️ Hapus
-                    </button>
+            <div class="date-separator">
+                <div class="flex justify-between items-center">
+                    <p class="font-bold text-gray-800">${dateFormatted}</p>
+                    <p class="font-bold text-blue-600">${displayRupiah(dailyTotal)}</p>
                 </div>
-                <p class="text-2xl font-bold text-blue-600">${hargaFormatted}</p>
+                <p class="text-xs text-gray-500 mt-1">${items.length} transaksi</p>
             </div>
         `;
+
+        // Transaction items for this date
+        items.forEach(item => {
+            const hargaFormatted = displayRupiah(item.harga);
+
+            html += `
+                <div class="transaction-card p-5 rounded-xl shadow-md border border-gray-100 fade-in" style="animation-delay: ${animationIndex * 0.05}s">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="flex-1">
+                            <p class="text-xl font-semibold text-gray-800">${item.nama_item}</p>
+                        </div>
+                        <button 
+                            onclick="deletePengeluaran(${item.id})" 
+                            class="btn-delete ml-3"
+                            title="Hapus"
+                        >
+                            🗑️ Hapus
+                        </button>
+                    </div>
+                    <p class="text-2xl font-bold text-blue-600">${hargaFormatted}</p>
+                </div>
+            `;
+            animationIndex++;
+        });
     });
 
     container.innerHTML = html;
+    updateFilteredSummary(filteredData, currentFilter);
+}
+
+function filterDataByPeriod(data, period) {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    switch (period) {
+        case 'today':
+            const todayStr = now.toISOString().split('T')[0];
+            return data.filter(item => item.tanggal === todayStr);
+
+        case 'week':
+            const weekAgo = new Date(today);
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            return data.filter(item => {
+                const itemDate = new Date(item.tanggal + 'T00:00:00');
+                return itemDate >= weekAgo;
+            });
+
+        case 'month':
+            const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+            return data.filter(item => {
+                const itemDate = new Date(item.tanggal + 'T00:00:00');
+                return itemDate >= monthStart;
+            });
+
+        case 'all':
+        default:
+            return data;
+    }
+}
+
+function updateFilteredSummary(data, period) {
+    const total = data.reduce((sum, item) => sum + parseFloat(item.harga), 0);
+    const count = data.length;
+
+    document.getElementById('filteredTotal').textContent = displayRupiah(total);
+    document.getElementById('transactionCount').textContent = count;
+
+    // Update period label
+    const labels = {
+        'today': 'Hari Ini',
+        'week': 'Minggu Ini',
+        'month': 'Bulan Ini',
+        'all': 'Semua Waktu'
+    };
+    document.getElementById('periodLabel').textContent = labels[period] || 'Hari Ini';
+}
+
+function filterByPeriod(period) {
+    currentFilter = period;
+
+    // Update active button
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.getElementById('filter' + period.charAt(0).toUpperCase() + period.slice(1)).classList.add('active');
+
+    // Re-display with new filter
+    displayPengeluaran(allPengeluaranData);
 }
 
 function calculateTotal(data) {
-    const total = data.reduce((sum, item) => sum + parseFloat(item.harga), 0);
-    document.getElementById('totalPengeluaran').textContent = displayRupiah(total);
+    // Calculate today's total for header
+    const today = new Date().toISOString().split('T')[0];
+    const todayData = data.filter(item => item.tanggal === today);
+    const todayTotal = todayData.reduce((sum, item) => sum + parseFloat(item.harga), 0);
+
+    document.getElementById('totalPengeluaran').textContent = displayRupiah(todayTotal);
+
+    // Display today's date
+    const todayDateFormatted = formatTanggal(today);
+    document.getElementById('todayDate').textContent = todayDateFormatted;
 }
 
 // ========================================
